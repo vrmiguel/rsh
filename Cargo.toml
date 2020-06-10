@@ -9,3 +9,9 @@ signal-hook = "0.1.15"
 whoami      = "0.8.1"
 dirs        = "2.0.2"
 termion     = "1.5.5"
+
+[profile.dev]
+panic = "unwind"
+
+[profile.release]
+panic = "unwind"
