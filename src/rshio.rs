@@ -1,8 +1,7 @@
-// Reads the input from the command-line
 use crate::CLIInput;
-use {std::{env}, whoami, dirs, termion::color};
+use {std::{env, io, io::Write}, whoami, dirs, termion::color};
 
-pub struct OS { // User data
+pub struct OS {         // User data
     username: String,   // Name of the user that started rsh
     hostname: String,   // Hostname of the user that started rsh
     cwd:      String,   // Current working directory
@@ -62,4 +61,5 @@ pub fn prompt(os: &OS)
 {
     print!("{}{}@{}{}:{}{}{}$ ", color::Fg(color::Green), os.username, os.hostname, 
         color::Fg(color::Reset), color::Fg(color::Blue), os.cwd_pp, color::Fg(color::Reset));
+    io::stdout().flush().unwrap();
 }
