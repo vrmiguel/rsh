@@ -1,4 +1,8 @@
-use crate::CLIInput;
+pub struct CLIInput {
+    pub is_verbose: bool,
+    pub exit: bool
+}
+
 use {std::{env, io, io::Write}, whoami, dirs, termion::color};
 
 pub struct OS {         // User data

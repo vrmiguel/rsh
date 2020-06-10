@@ -1,13 +1,10 @@
 mod rshio;
+mod rshexec;
 
 // TODO: check for SIGINT
 
+use crate::rshio::CLIInput;
 use std::io;
-
-pub struct CLIInput {
-    is_verbose: bool,
-    exit: bool
-}
 
 fn main() -> io::Result<()>
 {
@@ -25,14 +22,17 @@ fn main() -> io::Result<()>
         let mut input = String::new();
         if io::stdin().read_line(&mut input)? == 0 {
             println!("EOF found. Exiting.");
-            std::process::exit(0);
+            break;
         }
-        
         if input.trim().is_empty()
         {
             continue;
         }
-        break;
+        let tokens: Vec<String> = input.split(" ").map(str::to_string).collect();
+        rshexec::run(&tokens, &mut config);
+        if config.exit {
+            break;
+        }        
     }
     Ok(())
 }
