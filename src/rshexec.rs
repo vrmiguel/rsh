@@ -61,7 +61,7 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
     if config.is_verbose {
         println!("Running rshexec::change_dir");
     }
-    if tokens[1].trim().is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
+    if tokens[1].trim().is_empty() || tokens[1].trim() == "~" || tokens[1].trim() == "$HOME"
     {
         // User wants to go to $HOME
         let home = Path::new(&os.hmd);
