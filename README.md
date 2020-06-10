@@ -1,2 +1,10 @@
 # rsh
-An Unix shell written in C++.
+
+Little Unix shell written in Rust.
+
+## Build
+
+Run `cargo build`.
+
+## Dependencies
+
