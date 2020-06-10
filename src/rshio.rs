@@ -38,6 +38,14 @@ pub struct OS {           // User data
     pub cwd_pp: String    // cwd but for prompt pretty-printing
 }
 
+impl OS {
+    pub fn get_cwd (self: &mut OS)
+    {
+        let cwd = env::current_dir().unwrap();
+        self.cwd = cwd.as_os_str().to_str().unwrap().to_string();
+    }
+}
+
 pub fn cli(config: &mut CLIInput) 
 {
     let args: Vec<String> = env::args().skip(1).collect();

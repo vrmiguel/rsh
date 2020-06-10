@@ -61,7 +61,7 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
     if config.is_verbose {
         println!("Running rshexec::change_dir");
     }
-    if !tokens[1].trim().is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
+    if tokens[1].trim().is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
     {
         // User wants to go to $HOME
         let home = Path::new(&os.hmd);
@@ -74,6 +74,23 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
         }
         else {
             println!("Changing directory to {} failed.", os.hmd);
+        }
+    }
+    else {
+        let tok_trim = tokens[1].trim();
+        let next_dir = Path::new(&tok_trim);
+        if env::set_current_dir(&next_dir).is_ok()
+        {
+            os.cwd.clear();
+            rshio::OS::get_cwd(os);
+            os.cwd_pp.clear();
+            if config.is_verbose {
+                println!("New cwd: {:?}", os.cwd);
+            }
+            os.cwd_pp = os.cwd.replace(&os.hmd, "~");
+        }
+        else {
+            println!("Changing directory to {} failed.", tok_trim);
         }
     }
 }
