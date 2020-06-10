@@ -39,7 +39,7 @@ fn main() -> io::Result<()>
         std::process::exit(0);
     }
 
-    let os = rshio::get_user_data();
+    let mut os = rshio::get_user_data();
     println!("rsh - github.com/vrmiguel/rsh");
     loop 
     {
@@ -61,10 +61,10 @@ fn main() -> io::Result<()>
 
         if config.is_verbose
         {
-            println!("bin: {}", command[0]);
-            println!("args: {}", command[1]);
+            println!("bin: {}", command[0].trim());
+            println!("args: {}", command[1].trim());
         }
-        rshexec::run(&command, &mut config);
+        rshexec::run(&command, &mut config, &mut os);
         if config.exit {
             break;
         }        

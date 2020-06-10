@@ -24,10 +24,13 @@
  */
 
 use crate::rshio;
-use std::{process::Command, panic};
+use std::{process::Command, panic, env, path::Path};
 
-fn simple_command(tokens: &Vec<String>)
+fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
 {
+    if config.is_verbose {
+        println!("Running rshexec::simple_command");
+    }
     panic::set_hook(Box::new(|_info| {
         // Don't panic. It's all good.
     }));
@@ -53,13 +56,40 @@ fn simple_command(tokens: &Vec<String>)
     }
 }
 
-pub fn run(tokens: &Vec<String>, config: &mut rshio::CLIInput)
+fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 {
+    if config.is_verbose {
+        println!("Running rshexec::change_dir");
+    }
+    if !tokens[1].trim().is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
+    {
+        // User wants to go to $HOME
+        let home = Path::new(&os.hmd);
+        if env::set_current_dir(&home).is_ok()
+        {
+            os.cwd.clear();
+            os.cwd = os.hmd.clone();
+            os.cwd_pp.clear();
+            os.cwd_pp = String::from("~");
+        }
+        else {
+            println!("Changing directory to {} failed.", os.hmd);
+        }
+    }
+}
+
+pub fn run(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
+{
+    if config.is_verbose {
+        println!("Running rshexec::run");
+    }
+
     let first = tokens[0].trim();
 
     if first == "cd"
     {
-        println!("Change dir!");
+        change_dir(tokens, config, os);
+        return;
     }
 
     if first == "exit" || first == "quit"
@@ -68,6 +98,6 @@ pub fn run(tokens: &Vec<String>, config: &mut rshio::CLIInput)
         return;
     }
     else {
-        simple_command(tokens);
+        simple_command(tokens, config);
     }
 }

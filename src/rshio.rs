@@ -30,12 +30,12 @@ pub struct CLIInput {
 
 use {std::{env, io, io::Write}, whoami, dirs, termion::color};
 
-pub struct OS {         // User data
-    username: String,   // Name of the user that started rsh
-    hostname: String,   // Hostname of the user that started rsh
-    cwd:      String,   // Current working directory
-    hmd:      String,   // User's home directory
-    cwd_pp:   String    // cwd but for prompt pretty-printing
+pub struct OS {           // User data
+    username:   String,   // Name of the user that started rsh
+    hostname:   String,   // Hostname of the user that started rsh
+    pub cwd:    String,   // Current working directory
+    pub hmd:    String,   // User's home directory
+    pub cwd_pp: String    // cwd but for prompt pretty-printing
 }
 
 pub fn cli(config: &mut CLIInput) 
