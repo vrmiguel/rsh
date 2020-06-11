@@ -1,13 +1,14 @@
 [package]
 name = "rsh"
-version = "0.1.0"
-authors = ["Vinícius R. Miguel <36349314+vrmiguel@users.noreply.github.com>"]
+version = "0.1.0-dev"
+authors = ["Vinícius R. Miguel <vinicius.miguel@unifesp.br>"]
 edition = "2018"
 
 [dependencies]
 signal-hook = "0.1.15"
 whoami      = "0.8.1"
 dirs        = "2.0.2"
+pipers      = "1.0.0"
 termion     = "1.5.5"
 
 [profile.dev]

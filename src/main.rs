@@ -53,6 +53,14 @@ fn main() -> io::Result<()>
         {
             continue;
         }
+
+        let c = input.matches("|").count();
+        if c > 0
+        {
+            rshexec::piped_command(&input, &config, c);
+            continue;
+        } 
+
         let mut tokens: Vec<String> = input.split(" ").map(str::to_string).collect();
         let mut command: Vec<String> = Vec::new();
         command.push(tokens[0].clone());

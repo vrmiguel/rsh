@@ -24,7 +24,8 @@
  */
 
 use crate::rshio;
-use std::{process::Command, panic, env, path::Path};
+use pipers::Pipe;
+use std::{process::{Command}, panic, env, path::Path};
 
 fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
 {
@@ -92,6 +93,42 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
         else {
             println!("Changing directory to {} failed.", tok_trim);
         }
+    }
+}
+
+pub fn piped_command(input: &String, config:& rshio::CLIInput, c: usize)
+{
+    // TODO: redo this entire function, please
+
+    if config.is_verbose {
+        println!("Running rshexec::run");
+    }
+
+    // Getting the strings for both commands
+    let _commands: Vec<String> = input.split("|").map(str::to_string).collect();  // We know by know that there's a single pipe character here
+
+    if c==1 {
+        let out = Pipe::new(&(_commands[0].trim()))
+              .then(&(_commands[1].trim()))  
+              .finally()         
+              .expect("Commands did not pipe")
+              .wait_with_output()
+              .expect("failed to wait on child");
+        println!("{}", String::from_utf8(out.stdout).unwrap().trim());
+    }
+
+    else if c==2 {
+        let out = Pipe::new(&(_commands[0].trim()))
+              .then(&(_commands[1].trim()))
+              .then(&(_commands[2].trim()))
+              .finally()         
+              .expect("Commands did not pipe")
+              .wait_with_output()
+              .expect("failed to wait on child");
+        println!("{}", String::from_utf8(out.stdout).unwrap().trim());
+    }
+    else {
+        println!("Not implemented yet.");
     }
 }
 
