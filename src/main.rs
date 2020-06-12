@@ -25,7 +25,6 @@
 
 mod rshio;
 mod rshexec;
-mod pipers;
 
 // TODO: check for SIGINT
 

@@ -27,7 +27,7 @@
 use crate::rshio;
 use std::{process::{Stdio,Command}, panic, env, path::Path};
 use std::os::unix::io::{FromRawFd, AsRawFd};
-
+use std::io::{Error, ErrorKind, Result};
 
 fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
 {
@@ -130,11 +130,19 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
     command2.push(command2_tokens.join(" "));
     drop(command2_tokens);
 
-    let proc_1 = Command::new(&command1[0]).arg(&command1[1]).stdout(Stdio::piped()).spawn().unwrap();
+    let proc_1 = Command::new(&command1[0]).arg(&command1[1]).stdout(Stdio::piped()).spawn();
 
-    let stdout = proc_1.stdout.unwrap();
-    let stdio = unsafe{ Stdio::from_raw_fd(stdout.as_raw_fd()) };
-    let proc_2 = Command::new(&command1[0]).arg(&command1[1]).stdout(Stdio::piped()).stdin(stdio).spawn()
+    let stdout = match proc_1 {
+            Ok(proc_1) => match proc_1.stdout {
+                Some(stdout) => stdout,
+                None => return Err(Error::new(ErrorKind::Other, "no command to run")),
+            },
+            Err(e) => return Err(e),
+        };
+
+    let stdio  = unsafe{Stdio::from_raw_fd(stdout.as_raw_fd())};
+    
+    let proc_2 = Command::new(&command2[0]).arg(&command2[1]).stdout(Stdio::piped()).stdin(stdio).spawn()
                 .expect("Commands did not pipe")
                 .wait_with_output()
                 .expect("failed to wait on child");
