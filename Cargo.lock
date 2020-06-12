@@ -115,12 +115,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8f8bdf33df195859076e54ab11ee78a1b208382d3a26ec40d142ffc1ecc49ef"
 
 [[package]]
-name = "pipers"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee5fc4ee2584767241d624644f8dc720b0e4a6fa7af22cd38dfb66b05304cc26"
-
-[[package]]
 name = "redox_syscall"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -151,7 +145,6 @@ name = "rsh"
 version = "0.1.0-dev"
 dependencies = [
  "dirs",
- "pipers",
  "signal-hook",
  "termion",
  "whoami",

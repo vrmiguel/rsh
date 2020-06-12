@@ -13,6 +13,7 @@
  *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
+
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -24,8 +25,9 @@
  */
 
 use crate::rshio;
-use pipers::Pipe;
-use std::{process::{Command}, panic, env, path::Path};
+use std::{process::{Stdio,Command}, panic, env, path::Path};
+use std::os::unix::io::{FromRawFd, AsRawFd};
+
 
 fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
 {
@@ -96,7 +98,7 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
     }
 }
 
-pub fn piped_command(input: &String, config:& rshio::CLIInput, c: usize)
+pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std::io::Result<()>
 {
     // TODO: redo this entire function, please
 
@@ -105,32 +107,42 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, c: usize)
     }
 
     // Getting the strings for both commands
-    let _commands: Vec<String> = input.split("|").map(str::to_string).collect();  // We know by know that there's a single pipe character here
+    let commands: Vec<String> = input.split("|").map(str::to_string).collect();  // We know by know that there's a single pipe character here
+    let command1_str = commands[0].clone();
+    let command2_str = commands[1].clone();
+    drop(commands);
 
-    if c==1 {
-        let out = Pipe::new(&(_commands[0].trim()))
-              .then(&(_commands[1].trim()))  
-              .finally()         
-              .expect("Commands did not pipe")
-              .wait_with_output()
-              .expect("failed to wait on child");
-        println!("{}", String::from_utf8(out.stdout).unwrap().trim());
-    }
+    // Setting up command 1.
+    let mut command1_tokens: Vec<String> = command1_str.trim().split(" ").map(str::to_string).collect();
+    drop(command1_str);
+    let mut command1: Vec<String> = Vec::new();
+    command1.push(command1_tokens[0].clone());
+    command1_tokens.remove(0);
+    command1.push(command1_tokens.join(" "));
+    drop(command1_tokens);
 
-    else if c==2 {
-        let out = Pipe::new(&(_commands[0].trim()))
-              .then(&(_commands[1].trim()))
-              .then(&(_commands[2].trim()))
-              .finally()         
-              .expect("Commands did not pipe")
-              .wait_with_output()
-              .expect("failed to wait on child");
-        println!("{}", String::from_utf8(out.stdout).unwrap().trim());
-    }
-    else {
-        println!("Not implemented yet.");
-    }
+    // Setting up command 2.
+    let mut command2_tokens: Vec<String> = command2_str.trim().split(" ").map(str::to_string).collect();
+    drop(command2_str);
+    let mut command2: Vec<String> = Vec::new();
+    command2.push(command2_tokens[0].clone());
+    command2_tokens.remove(0);
+    command2.push(command2_tokens.join(" "));
+    drop(command2_tokens);
+
+    let proc_1 = Command::new(&command1[0]).arg(&command1[1]).stdout(Stdio::piped()).spawn().unwrap();
+
+    let stdout = proc_1.stdout.unwrap();
+    let stdio = unsafe{ Stdio::from_raw_fd(stdout.as_raw_fd()) };
+    let proc_2 = Command::new(&command1[0]).arg(&command1[1]).stdout(Stdio::piped()).stdin(stdio).spawn()
+                .expect("Commands did not pipe")
+                .wait_with_output()
+                .expect("failed to wait on child");
+
+    println!("{}", &String::from_utf8(proc_2.stdout).unwrap().trim());
+    Ok(())
 }
+
 
 pub fn run(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 {
