@@ -27,7 +27,7 @@
 use crate::rshio;
 use std::{process::{Stdio,Command}, panic, env, path::Path};
 use std::os::unix::io::{FromRawFd, AsRawFd};
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error, ErrorKind};
 
 fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
 {
@@ -44,7 +44,8 @@ fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
     {
         if !tokens[1].trim().is_empty()
         {
-            let mut child = Command::new(cmd.trim()).arg(&(tokens[1].trim())).spawn().expect("Problem running command.");
+            let args1: Vec<&str> = tokens.iter().skip(1).map(|s| &**s).collect(); // Optimize this
+            let mut child = Command::new(cmd.trim()).args(args1).spawn().expect("Problem running command.");
             let _ecode = child.wait().expect("Problem waiting for child.");
         }
         else {
@@ -130,7 +131,8 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
     command2.push(command2_tokens.join(" "));
     drop(command2_tokens);
 
-    let proc_1 = Command::new(&command1[0]).arg(&command1[1]).stdout(Stdio::piped()).spawn();
+    let args1: Vec<&str> = command1.iter().skip(1).map(|s| &**s).collect(); // Optimize this
+    let proc_1 = Command::new(&command1[0]).args(args1).stdout(Stdio::piped()).spawn();
 
     let stdout = match proc_1 {
             Ok(proc_1) => match proc_1.stdout {
@@ -142,7 +144,8 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
 
     let stdio  = unsafe{Stdio::from_raw_fd(stdout.as_raw_fd())};
     
-    let proc_2 = Command::new(&command2[0]).arg(&command2[1]).stdout(Stdio::piped()).stdin(stdio).spawn()
+    let args2: Vec<&str> = command2.iter().skip(1).map(|s| &**s).collect(); // Optimize this
+    let proc_2 = Command::new(&command2[0]).args(args2).stdout(Stdio::piped()).stdin(stdio).spawn()
                 .expect("Commands did not pipe")
                 .wait_with_output()
                 .expect("failed to wait on child");
@@ -158,7 +161,7 @@ pub fn run(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio::O
         println!("Running rshexec::run");
     }
 
-    let first = tokens[0].trim();
+    let first = &tokens[0];
 
     if first == "cd"
     {
