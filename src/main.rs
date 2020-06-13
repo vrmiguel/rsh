@@ -49,7 +49,8 @@ fn main() -> io::Result<()>
             println!("EOF found. Exiting.");
             break;
         }
-        if input.trim().is_empty()
+        input = input.clone().trim().to_string();
+        if input.is_empty()
         {
             continue;
         }
@@ -57,14 +58,14 @@ fn main() -> io::Result<()>
         let c = input.matches("|").count();
         if c > 0
         {
-            rshexec::piped_command(&input, &config, c);
+            let status = rshexec::piped_command(&input, &config, c);
+            if status.is_err() {  // if rshexec::piped_command failed
+                println!("rsh: problem running {:?}", input);
+            }
             continue;
         } 
 
         let mut tokens: Vec<String> = input.split(" ").map(str::to_string).collect();
-        for i in 0..tokens.len() {
-            tokens[i] = tokens[i].trim().to_string();
-        }
         let mut command: Vec<String> = Vec::new();
         command.push(tokens[0].to_string());
         tokens.remove(0);

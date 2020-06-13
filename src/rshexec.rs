@@ -98,6 +98,8 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
     }
 }
 
+
+
 pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std::io::Result<()>
 {
     // TODO: redo this entire function, please
@@ -130,8 +132,14 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
     command2.push(command2_tokens.join(" "));
     drop(command2_tokens);
 
-    let args1: Vec<&str> = command1.iter().skip(1).map(|s| &**s).collect(); // Optimize this
-    let proc_1 = Command::new(&command1[0]).args(args1).stdout(Stdio::piped()).spawn();
+    let proc_1: std::result::Result<std::process::Child, std::io::Error>;
+    if !command1[1].is_empty() 
+    {
+        let args1: Vec<&str> = command1.iter().skip(1).map(|s| &**s).collect(); // Optimize this
+        proc_1 = Command::new(&command1[0]).args(args1).stdout(Stdio::piped()).spawn();
+    } else {
+        proc_1 = Command::new(&command1[0]).stdout(Stdio::piped()).spawn();
+    }
 
     let stdout = match proc_1 {
             Ok(proc_1) => match proc_1.stdout {
@@ -143,11 +151,21 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
 
     let stdio  = unsafe{Stdio::from_raw_fd(stdout.as_raw_fd())};
     
-    let args2: Vec<&str> = command2.iter().skip(1).map(|s| &**s).collect(); // Optimize this
-    let proc_2 = Command::new(&command2[0]).args(args2).stdout(Stdio::piped()).stdin(stdio).spawn()
+    let proc_2: std::process::Output;
+
+    if !command2[1].is_empty() 
+    {
+        let args2: Vec<&str> = command2.iter().skip(1).map(|s| &**s).collect(); // Optimize this
+        proc_2 = Command::new(&command2[0]).args(args2).stdout(Stdio::piped()).stdin(stdio).spawn()
                 .expect("Commands did not pipe")
                 .wait_with_output()
                 .expect("failed to wait on child");
+    } else {
+        proc_2 = Command::new(&command2[0]).stdout(Stdio::piped()).stdin(stdio).spawn()
+                .expect("Commands did not pipe")
+                .wait_with_output()
+                .expect("failed to wait on child");
+    }
 
     println!("{}", &String::from_utf8(proc_2.stdout).unwrap().trim());
     Ok(())
