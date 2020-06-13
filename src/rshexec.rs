@@ -110,35 +110,29 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
 
     // Getting the strings for both commands
     let commands: Vec<String> = input.split("|").map(str::to_string).collect();  // We know by know that there's a single pipe character here
-    let command1_str = commands[0].clone();
-    let command2_str = commands[1].clone();
-    drop(commands);
 
     // Setting up command 1.
-    let mut command1_tokens: Vec<String> = command1_str.trim().split(" ").map(str::to_string).collect();
-    drop(command1_str);
-    let mut command1: Vec<String> = Vec::new();
-    command1.push(command1_tokens[0].clone());
-    command1_tokens.remove(0);
-    command1.push(command1_tokens.join(" "));
-    drop(command1_tokens);
+    let mut split_1 = commands[0].split_whitespace();
+    let command_1 = match split_1.next() {
+            Some(x) => x,
+            None =>  return Err(Error::new(ErrorKind::Other, "no command to run.")),
+        };
+    let args_cmd_1  = split_1.collect::<Vec<&str>>();
 
     // Setting up command 2.
-    let mut command2_tokens: Vec<String> = command2_str.trim().split(" ").map(str::to_string).collect();
-    drop(command2_str);
-    let mut command2: Vec<String> = Vec::new();
-    command2.push(command2_tokens[0].clone());
-    command2_tokens.remove(0);
-    command2.push(command2_tokens.join(" "));
-    drop(command2_tokens);
+    let mut split_2 = commands[1].split_whitespace();
+    let command_2 = match split_2.next() {
+            Some(x) => x,
+            None =>  return Err(Error::new(ErrorKind::Other, "no command to run.")),
+        };
+    let args_cmd_2  = split_2.collect::<Vec<&str>>();
 
     let proc_1: std::result::Result<std::process::Child, std::io::Error>;
-    if !command1[1].is_empty() 
+    if !args_cmd_1.is_empty()
     {
-        let args1: Vec<&str> = command1.iter().skip(1).map(|s| &**s).collect(); // Optimize this
-        proc_1 = Command::new(&command1[0]).args(args1).stdout(Stdio::piped()).spawn();
+        proc_1 = Command::new(command_1).args(args_cmd_1.as_slice()).stdout(Stdio::piped()).spawn();
     } else {
-        proc_1 = Command::new(&command1[0]).stdout(Stdio::piped()).spawn();
+        proc_1 = Command::new(command_1).stdout(Stdio::piped()).spawn();
     }
 
     let stdout = match proc_1 {
@@ -153,15 +147,14 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
     
     let proc_2: std::process::Output;
 
-    if !command2[1].is_empty() 
+    if !args_cmd_2.is_empty()
     {
-        let args2: Vec<&str> = command2.iter().skip(1).map(|s| &**s).collect(); // Optimize this
-        proc_2 = Command::new(&command2[0]).args(args2).stdout(Stdio::piped()).stdin(stdio).spawn()
+        proc_2 = Command::new(command_2).args(args_cmd_2.as_slice()).stdout(Stdio::piped()).stdin(stdio).spawn()
                 .expect("Commands did not pipe")
                 .wait_with_output()
                 .expect("failed to wait on child");
     } else {
-        proc_2 = Command::new(&command2[0]).stdout(Stdio::piped()).stdin(stdio).spawn()
+        proc_2 = Command::new(command_2).stdout(Stdio::piped()).stdin(stdio).spawn()
                 .expect("Commands did not pipe")
                 .wait_with_output()
                 .expect("failed to wait on child");
