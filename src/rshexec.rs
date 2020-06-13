@@ -59,12 +59,12 @@ fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput)
     }
 }
 
-fn change_dir(tokens: Vec<&str>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
+fn change_dir(new_dir: String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 {
     if config.is_verbose {
         println!("Running rshexec::change_dir");
     }
-    if tokens.is_empty() || tokens[0] == "~" || tokens[0] == "$HOME"
+    if new_dir.is_empty() || new_dir == "~" || new_dir == "$HOME"
     {
         // User wants to go to $HOME
         let home = Path::new(&os.hmd);
@@ -80,7 +80,6 @@ fn change_dir(tokens: Vec<&str>, config: &mut rshio::CLIInput, os: &mut rshio::O
         }
     }
     else {
-        let new_dir = tokens.join(" ");
         let next_dir = Path::new(&new_dir);
         if env::set_current_dir(&next_dir).is_ok()
         {
@@ -93,12 +92,10 @@ fn change_dir(tokens: Vec<&str>, config: &mut rshio::CLIInput, os: &mut rshio::O
             os.cwd_pp = os.cwd.replace(&os.hmd, "~");
         }
         else {
-            println!("Changing directory to {} failed.", tokens[1]);
+            println!("Changing directory to {} failed.", new_dir);
         }
     }
 }
-
-
 
 pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std::io::Result<()>
 {
@@ -177,7 +174,12 @@ pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 
     if command == "cd"
     {
-        change_dir(args, config, os);
+        if !args.is_empty() {
+            change_dir(args[0].to_string(), config, os);
+        }
+        else {
+            change_dir("".to_string(), config, os);
+        }
         return;
     }
 
