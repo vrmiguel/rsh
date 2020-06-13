@@ -65,18 +65,7 @@ fn main() -> io::Result<()>
             continue;
         } 
 
-        let mut tokens: Vec<String> = input.split(" ").map(str::to_string).collect();
-        let mut command: Vec<String> = Vec::new();
-        command.push(tokens[0].to_string());
-        tokens.remove(0);
-        command.push(tokens.join(" "));
-
-        if config.is_verbose
-        {
-            println!("bin: {}", command[0]);
-            println!("args: {}", command[1]);
-        }
-        rshexec::run(&command, &mut config, &mut os);
+        rshexec::run(&input, &mut config, &mut os);
         if config.exit {
             break;
         }        

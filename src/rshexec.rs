@@ -29,7 +29,7 @@ use std::{process::{Stdio,Command}, panic, env, path::Path};
 use std::os::unix::io::{FromRawFd, AsRawFd};
 use std::io::{Error, ErrorKind};
 
-fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
+fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput)
 {
     if config.is_verbose {
         println!("Running rshexec::simple_command");
@@ -38,14 +38,13 @@ fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
         // Don't panic. It's all good.
     }));
 
-    let cmd = String::from("/bin/") + &tokens[0];
+    let cmd = String::from("/bin/") + command;
 
     let result = panic::catch_unwind(|| 
     {
-        if !tokens[1].is_empty()
+        if !args.is_empty()
         {
-            let args1: Vec<&str> = tokens.iter().skip(1).map(|s| &**s).collect(); // Optimize this
-            let mut child = Command::new(cmd).args(args1).spawn().expect("Problem running command.");
+            let mut child = Command::new(cmd).args(args).spawn().expect("Problem running command.");
             let _ecode = child.wait().expect("Problem waiting for child.");
         }
         else {
@@ -56,16 +55,16 @@ fn simple_command(tokens: &Vec<String>, config: &rshio::CLIInput)
 
     match result {
         Ok(res) => res,
-        Err(_) => println!("rsh: problem running command {}", tokens[0]),
+        Err(_) => println!("rsh: problem running command {}", command),
     }
 }
 
-fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
+fn change_dir(tokens: &Vec<&str>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 {
     if config.is_verbose {
         println!("Running rshexec::change_dir");
     }
-    if tokens[1].is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
+    if tokens.is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
     {
         // User wants to go to $HOME
         let home = Path::new(&os.hmd);
@@ -81,7 +80,8 @@ fn change_dir(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio
         }
     }
     else {
-        let next_dir = Path::new(&tokens[1]);
+        let new_dir = tokens.join(" ");
+        let next_dir = Path::new(&new_dir);
         if env::set_current_dir(&next_dir).is_ok()
         {
             os.cwd.clear();
@@ -165,26 +165,28 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
 }
 
 
-pub fn run(tokens: &Vec<String>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
+pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 {
     if config.is_verbose {
         println!("Running rshexec::run");
     }
 
-    let first = &tokens[0];
+    let mut tokens = input.split_whitespace();
+    let command    = tokens.next().unwrap();
+    let args       = tokens.collect::<Vec<&str>>();
 
-    if first == "cd"
+    if command == "cd"
     {
-        change_dir(tokens, config, os);
+        change_dir(&args, config, os);
         return;
     }
 
-    if first == "exit" || first == "quit"
+    if command == "exit" || command == "quit"
     {
         config.exit = true;
         return;
     }
     else {
-        simple_command(tokens, config);
+        simple_command(command, args, config);
     }
 }
