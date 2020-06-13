@@ -59,12 +59,12 @@ fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput)
     }
 }
 
-fn change_dir(tokens: &Vec<&str>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
+fn change_dir(tokens: Vec<&str>, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 {
     if config.is_verbose {
         println!("Running rshexec::change_dir");
     }
-    if tokens.is_empty() || tokens[1] == "~" || tokens[1] == "$HOME"
+    if tokens.is_empty() || tokens[0] == "~" || tokens[0] == "$HOME"
     {
         // User wants to go to $HOME
         let home = Path::new(&os.hmd);
@@ -177,7 +177,7 @@ pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 
     if command == "cd"
     {
-        change_dir(&args, config, os);
+        change_dir(args, config, os);
         return;
     }
 
