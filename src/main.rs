@@ -29,7 +29,11 @@ mod rshexec;
 // TODO: check for SIGINT
 
 use crate::rshio::CLIInput;
-use std::io;
+use std::{io, thread, sync::Arc};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use signal_hook::{iterator::Signals};
+
 
 fn main() -> io::Result<()>
 {
@@ -39,10 +43,28 @@ fn main() -> io::Result<()>
         std::process::exit(0);
     }
 
+    let signals = Signals::new(&[signal_hook::SIGINT, signal_hook::SIGHUP])?;
+
+    let exit_signal = Arc::new(AtomicBool::new(false));
+    let exit_signal1 = Arc::clone(&exit_signal);
+
+    thread::spawn(move || {        
+        for sig in signals.forever() {
+            if sig == 2 {
+                eprint!("\nSIGINT received: exiting. Press backspace. ");
+                exit_signal1.swap(true, Ordering::Relaxed);
+            }
+        }
+    });
+
     let mut os = rshio::get_user_data();
     println!("rsh - github.com/vrmiguel/rsh");
-    loop 
+
+    loop
     {
+        if exit_signal.load(Ordering::Relaxed) {
+            break;
+        }
         rshio::prompt(&os);
         let mut input = String::new();
         if io::stdin().read_line(&mut input)? == 0 {
@@ -68,7 +90,7 @@ fn main() -> io::Result<()>
         rshexec::run(&input, &mut config, &mut os);
         if config.exit {
             break;
-        }        
+        }
     }
     Ok(())
 }
