@@ -2,11 +2,15 @@
 
 Unix shell written in Rust. This is an experiment in learning Rust.
 
+![Screenshot](https://user-images.githubusercontent.com/36349314/84598912-82947d00-ae44-11ea-8673-6e76574304e9.png)
+
+
 ## Features
 
-* Run any program in `/bin`.
-* Implements `cd`.
-* Signal handler
+* Run any program in `/bin` that does not require `sudo`;
+* Implements `cd`;
+* Signal handler;
+* Prompt similar to `bash`'s default.
 * Piped commands, currently limited to a single pipe.
 
 ## Build
