@@ -7,7 +7,7 @@ Unix shell written in Rust. This is an experiment in learning Rust.
 
 ## Features
 
-* Run any program in `/bin` that does not require `sudo`;
+* Runs any program in `/bin` that does not require `sudo`;
 * Implements `cd`;
 * Signal handler;
 * Prompt similar to `bash`'s default.
