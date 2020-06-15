@@ -32,7 +32,6 @@ use std::fs::File;
 
 fn save_output(output: &str, out_file: &str) -> std::io::Result<()>
 {
-    println!("Saving output {:?} to {}", output, out_file.trim());
     let mut file = File::create(out_file)?;
     file.write_all(output.as_bytes())?;
     Ok(())
@@ -66,6 +65,9 @@ fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput, out_
                 if save_output(output.trim(), out_file.trim()).is_err() {
                     println!("rsh: failed to save the output of \"{} ..\" on {}", command, out_file);
                 }
+                else {
+                    println!("rsh: saved output to {:?}", out_file.trim());
+                }
             }
         }
         else 
@@ -82,6 +84,8 @@ fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput, out_
                 let output = std::str::from_utf8(&child_proc.stdout).unwrap();
                 if save_output(output.trim(), out_file.trim()).is_err() {
                     println!("rsh: failed to save the output of {} on {}", command, out_file);
+                } else {
+                    println!("rsh: saved output to {:?}", out_file.trim());
                 }
             }
         }
