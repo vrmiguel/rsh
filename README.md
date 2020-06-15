@@ -11,12 +11,13 @@ Unix shell written in Rust. This is an experiment in learning Rust.
 * Implements `cd`;
 * Save to file with `>`.
 * Signal handler;
+* Unwinds before exit, interrupted or not;
 * Prompt similar to `bash`'s default.
 * Piped commands, currently limited to a single pipe.
 
 ## Build
 
-Run `cargo build`.
+Run `cargo build -- release` (or `cargo build` for a debug build) inside the `rsh-master` folder.
 
 ## Dependencies
 
