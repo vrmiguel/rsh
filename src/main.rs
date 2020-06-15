@@ -31,28 +31,30 @@ mod rshexec;
 use crate::rshio::CLIInput;
 use std::{io, thread, sync::Arc};
 use std::sync::atomic::{AtomicBool, Ordering};
-
 use signal_hook::{iterator::Signals};
 
 
 fn main() -> io::Result<()>
 {
     let mut config = CLIInput { is_verbose: false, exit: false };
-    rshio::cli(&mut config);
+    rshio::cli(&mut config);        // Reads command-line arguments.
     if config.exit {
         std::process::exit(0);
     }
 
     let signals = Signals::new(&[signal_hook::SIGINT, signal_hook::SIGHUP])?;
 
-    let exit_signal = Arc::new(AtomicBool::new(false));
-    let exit_signal1 = Arc::clone(&exit_signal);
+    let exit_signal = Arc::new(AtomicBool::new(false));   // Bool to be shared between threads: tells main if there's ..
+                                                          // .. been a termination signal.
+   
+    let exit_signal1 = Arc::clone(&exit_signal);          // Clone exit_signal as to not move a value inside of closure.
 
-    thread::spawn(move || {        
+    thread::spawn(move || {
+        // Signal handler thread.
         for sig in signals.forever() {
             if sig == 2 {
                 eprint!("\nSIGINT received: exiting. Press backspace. ");
-                exit_signal1.swap(true, Ordering::Relaxed);
+                exit_signal1.swap(true, Ordering::Relaxed); // The loop below will see this is true and exit.
             }
         }
     });
@@ -63,9 +65,11 @@ fn main() -> io::Result<()>
     loop
     {
         if exit_signal.load(Ordering::Relaxed) {
+            // Checks if there's been a signal for interruption.
             break;
         }
-        rshio::prompt(&os);
+
+        rshio::prompt(&os); // Prints the prompt
         let mut input = String::new();
         if io::stdin().read_line(&mut input)? == 0 {
             println!("EOF found. Exiting.");
@@ -77,10 +81,10 @@ fn main() -> io::Result<()>
             continue;
         }
 
-        let c = input.matches("|").count();
-        if c > 0
+        let pipe_count = input.matches("|").count();
+        if pipe_count > 0
         {
-            let status = rshexec::piped_command(&input, &config, c);
+            let status = rshexec::piped_command(&input, &config, pipe_count);
             if status.is_err() {  // if rshexec::piped_command failed
                 println!("rsh: problem running {:?}", input);
             }

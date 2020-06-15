@@ -9,6 +9,7 @@ Unix shell written in Rust. This is an experiment in learning Rust.
 
 * Runs any program in `/bin` that does not require `sudo`;
 * Implements `cd`;
+* Save to file with `>`.
 * Signal handler;
 * Prompt similar to `bash`'s default.
 * Piped commands, currently limited to a single pipe.

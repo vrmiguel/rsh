@@ -27,9 +27,18 @@
 use crate::rshio;
 use std::{process::{Stdio,Command}, panic, env, path::Path};
 use std::os::unix::io::{FromRawFd, AsRawFd};
-use std::io::{Error, ErrorKind};
+use std::io::{Error, ErrorKind, Write};
+use std::fs::File;
 
-fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput)
+fn save_output(output: &str, out_file: &str) -> std::io::Result<()>
+{
+    println!("Saving output {:?} to {}", output, out_file.trim());
+    let mut file = File::create(out_file)?;
+    file.write_all(output.as_bytes())?;
+    Ok(())
+}
+
+fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput, out_file: &str)
 {
     if config.is_verbose {
         println!("Running rshexec::simple_command");
@@ -40,16 +49,41 @@ fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput)
 
     let cmd = String::from("/bin/") + command;
 
-    let result = panic::catch_unwind(|| 
-    {
+    let result = panic::catch_unwind(|| {   // I really need to refactor this
         if !args.is_empty()
         {
-            let mut child = Command::new(cmd).args(args).spawn().expect("Problem running command.");
-            let _ecode = child.wait().expect("Problem waiting for child.");
+            if out_file.is_empty() {
+                // In case there's no output file.
+                // I'm doing this instead of just printing the _output variable on the clause below because ..
+                // .. doing this has prettier outputs, in commands such as `ls`.
+                let mut child = Command::new(cmd).args(args).spawn().expect("Problem running command.");
+                let _ecode = child.wait().expect("Problem waiting for child.");
+            } else 
+            {
+                // Save output to a file
+                let child_proc = Command::new(cmd).args(args).output().expect("Problem running command.");
+                let output = std::str::from_utf8(&child_proc.stdout).unwrap();
+                if save_output(output.trim(), out_file.trim()).is_err() {
+                    println!("rsh: failed to save the output of \"{} ..\" on {}", command, out_file);
+                }
+            }
         }
-        else {
-            let mut child = Command::new(cmd).spawn().expect("Problem running command.");
-            let _ecode = child.wait().expect("Problem waiting for child.");
+        else 
+        {
+            // There are no arguments to the command.
+            // This is in a different clause because in this case, we can't have the call to .args()
+            if out_file.is_empty()
+            {
+                let mut child = Command::new(cmd).spawn().expect("Problem running command.");
+                let _ecode = child.wait().expect("Problem waiting for child.");
+            }
+            else {
+                let child_proc = Command::new(cmd).output().expect("Problem running command.");
+                let output = std::str::from_utf8(&child_proc.stdout).unwrap();
+                if save_output(output.trim(), out_file.trim()).is_err() {
+                    println!("rsh: failed to save the output of {} on {}", command, out_file);
+                }
+            }
         }
     });
 
@@ -57,6 +91,8 @@ fn simple_command(command: &str, args: Vec<&str>, config: &rshio::CLIInput)
         Ok(res) => res,
         Err(_) => println!("rsh: problem running command {}", command),
     }
+
+    //println!("{}", _output.trim());
 }
 
 fn change_dir(new_dir: String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
@@ -76,7 +112,7 @@ fn change_dir(new_dir: String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
             os.cwd_pp = String::from("~");
         }
         else {
-            println!("Changing directory to {} failed.", os.hmd);
+            println!("rsh: changing directory to {} failed.", os.hmd);
         }
     }
     else {
@@ -92,7 +128,7 @@ fn change_dir(new_dir: String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
             os.cwd_pp = os.cwd.replace(&os.hmd, "~");
         }
         else {
-            println!("Changing directory to {} failed.", new_dir);
+            println!("rsh: changing directory to {} failed.", new_dir);
         }
     }
 }
@@ -168,7 +204,21 @@ pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
         println!("Running rshexec::run");
     }
 
-    let mut tokens = input.split_whitespace();
+    let mut tokens : std::str::SplitWhitespace;
+    let mut output_file = "";
+
+    let redir_count = input.matches(">").count();
+    if redir_count > 0 {
+        if redir_count > 1 {
+            println!("rsh: user supplied more '>' characters than supported.");
+            return;
+        }
+        let mut temp_tokens = input.split(">");
+        tokens      = temp_tokens.next().unwrap().split_whitespace();
+        output_file = temp_tokens.next().unwrap();
+    } else {
+        tokens = input.split_whitespace();
+    }
     let command    = tokens.next().unwrap();
     let args       = tokens.collect::<Vec<&str>>();
 
@@ -189,6 +239,6 @@ pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
         return;
     }
     else {
-        simple_command(command, args, config);
+        simple_command(command, args, config, output_file);
     }
 }
