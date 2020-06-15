@@ -8,12 +8,13 @@ Unix shell written in Rust. This is an experiment in learning Rust.
 ## Features
 
 * Runs any program in `/bin` that does not require `sudo`;
-* Implements `cd`;
-* Save to file with `>`.
+* Piped commands, currently limited to a single pipe.
+* Save the output of simple and piped commands to a file with `>`.
+    * e.g. `ls -li | tr s x > output`
 * Signal handler;
+* Implements `cd`;
 * Unwinds before exit, interrupted or not;
 * Prompt similar to `bash`'s default.
-* Piped commands, currently limited to a single pipe.
 
 ## Build
 

@@ -33,7 +33,7 @@ use std::fs::File;
 fn save_output(output: &str, out_file: &str) -> std::io::Result<()>
 {
     let mut file = File::create(out_file)?;
-    file.write_all(output.as_bytes())?;
+    file.write_all(output.trim().as_bytes())?;
     Ok(())
 }
 
@@ -137,9 +137,11 @@ fn change_dir(new_dir: String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
     }
 }
 
-pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std::io::Result<()>
+pub fn piped_command(input: &str, config:& rshio::CLIInput, c: usize, output_file: &str) -> std::io::Result<()>
 {
-    // TODO: redo this entire function, please
+    if c > 1 {
+        eprintln!("rsh: usoing more than one pipe is currently unimplemented.");
+    }
 
     if config.is_verbose {
         println!("Running rshexec::run");
@@ -197,7 +199,18 @@ pub fn piped_command(input: &String, config:& rshio::CLIInput, _c: usize) -> std
                 .expect("failed to wait on child");
     }
 
-    println!("{}", &String::from_utf8(proc_2.stdout).unwrap().trim());
+    if output_file.trim().is_empty() {
+        // No output file supplied: print to stdout
+        println!("{}", &String::from_utf8(proc_2.stdout).unwrap().trim());
+    } else {
+        if save_output(&String::from_utf8(proc_2.stdout).unwrap().trim(), output_file).is_err()
+        {
+            println!("rsh: failed to save the output of \"{} ..\" on {}", input, output_file.trim());
+        }
+        else {
+            println!("rsh: saved output to {:?}", output_file.trim());
+        }
+    }
     Ok(())
 }
 
@@ -211,20 +224,41 @@ pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
     let mut tokens : std::str::SplitWhitespace;
     let mut output_file = "";
 
+
+    let pipe_count  = input.matches("|").count();
     let redir_count = input.matches(">").count();
     if redir_count > 0 {
+        // If there's been a '>' character
         if redir_count > 1 {
             println!("rsh: user supplied more '>' characters than supported.");
             return;
         }
+
         let mut temp_tokens = input.split(">");
+
+        if pipe_count > 0
+        {
+            let status = piped_command(temp_tokens.next().unwrap(), &config, pipe_count, temp_tokens.next().unwrap());
+            if status.is_err() {  // if rshexec::piped_command failed
+                println!("rsh: problem running {:?}", input);
+            }
+            return;
+        }
+
         tokens      = temp_tokens.next().unwrap().split_whitespace();
         output_file = temp_tokens.next().unwrap();
     } else {
+        if pipe_count > 0 {
+            let status = piped_command(input, &config, pipe_count, "");
+            if status.is_err() {  // if rshexec::piped_command failed
+                println!("rsh: problem running {:?}", input);
+            }
+            return;
+        }
         tokens = input.split_whitespace();
     }
-    let command    = tokens.next().unwrap();
-    let args       = tokens.collect::<Vec<&str>>();
+    let command    = tokens.next().unwrap();         // The name of the `/bin` command ..
+    let args       = tokens.collect::<Vec<&str>>();  // .. and its arguments (optional)
 
     if command == "cd"
     {
@@ -239,6 +273,7 @@ pub fn run(input: &String, config: &mut rshio::CLIInput, os: &mut rshio::OS)
 
     if command == "exit" || command == "quit"
     {
+        // Doing this instead of an exit() because this guarantees destructors will be called.
         config.exit = true;
         return;
     }

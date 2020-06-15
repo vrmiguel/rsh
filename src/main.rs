@@ -80,17 +80,6 @@ fn main() -> io::Result<()>
         {
             continue;
         }
-
-        let pipe_count = input.matches("|").count();
-        if pipe_count > 0
-        {
-            let status = rshexec::piped_command(&input, &config, pipe_count);
-            if status.is_err() {  // if rshexec::piped_command failed
-                println!("rsh: problem running {:?}", input);
-            }
-            continue;
-        } 
-
         rshexec::run(&input, &mut config, &mut os);
         if config.exit {
             break;
