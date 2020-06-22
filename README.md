@@ -18,7 +18,7 @@ Unix shell written in Rust. This is an experiment in learning Rust.
 
 ## Build
 
-Run `cargo build -- release` (or `cargo build` for a debug build) inside the `rsh-master` folder.
+Run `cargo build --release` (or `cargo build` for a debug build) inside the `rsh-master` folder.
 
 ## Dependencies
 
